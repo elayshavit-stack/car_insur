@@ -5,13 +5,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ה-Mock Database שלך (בדיוק מה שהמטלה דורשת בחלק א')
+const vehicleDatabase = {
+    "12345678": {
+        license_plate: "12345678",
+        manufacturer: "טויוטה",
+        model: "קורולה",
+        year: 2020,
+        color: "לבן"
+    },
+    "87654321": {
+        license_plate: "87654321",
+        manufacturer: "יונדאי",
+        model: "i20",
+        year: 2022,
+        color: "כסוף"
+    }
+};
+
 function isValidLicensePlate(plate) {
     if (!plate || typeof plate !== 'string') return false;
     const cleaned = plate.replace(/[-\s]/g, '');
     return /^\d{7,8}$/.test(cleaned);
 }
 
-app.post('/vehicle-info', async (req, res) => {
+app.post('/vehicle-info', (req, res) => {
     const { license_plate } = req.body;
 
     if (!license_plate) {
@@ -19,43 +37,23 @@ app.post('/vehicle-info', async (req, res) => {
     }
 
     if (!isValidLicensePlate(license_plate)) {
-        return res.status(400).json({ success: false, error: "Invalid license plate format. Expected 7-8 digits." });
+        return res.status(400).json({ success: false, error: "Invalid license plate format." });
     }
 
     const cleaned = license_plate.replace(/[-\s]/g, '');
+    const vehicle = vehicleDatabase[cleaned];
 
-    try {
-        const externalApiUrl = 'https://insurance-webhook-945894769129.us-centrall.run.app/vehicle-info'; 
-        
-        // ביצוע הקריאה לשרת של המטלה
-        const apiResponse = await fetch(externalApiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ license_plate: cleaned })
-        });
-
-        // קבלת התשובה מהשרת
-        const data = await apiResponse.json();
-
-        // אם השרת החיצוני החזיר שגיאה (למשל רכב לא נמצא)
-        if (!apiResponse.ok || data.success === false) {
-            return res.status(apiResponse.status === 200 ? 404 : apiResponse.status).json({
-                success: false,
-                error: "Vehicle not found in the external database"
-            });
-        }
-
-        return res.json(data);
-
-    } catch (error) {
-        console.error("Error fetching from external API:", error);
-        return res.status(500).json({
-            success: false,
-            error: "Internal server error while connecting to external API"
+    if (vehicle) {
+        return res.json({
+            success: true,
+            data: vehicle
         });
     }
+
+    return res.status(404).json({
+        success: false,
+        error: "Vehicle not found"
+    });
 });
 
 const PORT = process.env.PORT || 8080;
