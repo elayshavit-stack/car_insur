@@ -5,7 +5,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ה-Mock Database שלך (בדיוק מה שהמטלה דורשת בחלק א')
 const vehicleDatabase = {
     "12345678": {
         license_plate: "12345678",
